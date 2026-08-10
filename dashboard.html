@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mi curso — Raabta Beauty Academy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Hedvig+Letters+Serif:opsz@12..24&family=Open+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{ --bg:#fdf7ef; --ink:#3f3126; --brown:#633b2c; --gold:#a47234; --cream:#f7ecdf; --muted:#7a685d; --line:#f0e4d3; --border:#ecdcc6; --serif:'Hedvig Letters Serif',serif; }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:'Open Sans',sans-serif;background:var(--bg);color:var(--ink)}
+  a{color:#986a3e;text-decoration:none}
+  a:hover{color:var(--brown)}
+  h1,h2,h3{font-family:var(--serif);font-weight:400;color:var(--brown);margin:0}
+  button{font-family:inherit}
+  header{position:sticky;top:0;z-index:50;background:rgba(253,247,239,.95);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+  .header-inner{max-width:1180px;margin:0 auto;padding:14px 32px;display:flex;align-items:center;justify-content:space-between;gap:24px}
+  nav{display:flex;gap:8px;align-items:center}
+  nav a{padding:10px 16px;border-radius:999px;font-size:14px;font-weight:600;color:var(--brown)}
+  nav a:hover{background:var(--cream)}
+  nav a.current{font-weight:700;color:#fff;background:var(--gold)}
+  nav a.current:hover{color:#fff}
+  .wrap{max-width:1180px;margin:0 auto;padding:32px 32px 90px}
+  .dash-grid{display:grid;grid-template-columns:240px 1fr;gap:32px;align-items:start}
+  .dash-sidebar{display:flex}
+  .dash-tabs-mobile{display:none}
+  @media (max-width:860px){ .dash-grid{grid-template-columns:1fr} .dash-sidebar{display:none} .dash-tabs-mobile{display:flex} }
+  .tab-btn{padding:10px 18px;border-radius:999px;border:1.5px solid var(--border);background:transparent;color:var(--brown);font-size:13.5px;font-weight:600;cursor:pointer}
+  .tab-btn.active{background:var(--gold);color:#fff;border-color:var(--gold);font-weight:700}
+  .side-tab-btn{text-align:left;padding:12px 16px;border-radius:14px;border:none;background:transparent;color:var(--brown);font-size:14.5px;font-weight:600;cursor:pointer}
+  .side-tab-btn.active{background:var(--gold);color:#fff;font-weight:700}
+  .progress-card{background:#fff;border-radius:22px;padding:24px 26px;margin-bottom:24px}
+  .progress-bar{height:10px;background:var(--line);border-radius:999px;overflow:hidden}
+  .progress-fill{height:100%;background:var(--gold);border-radius:999px}
+  .player{background:#211611;border-radius:22px;height:340px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;margin-bottom:28px;color:#e8d3b8}
+  .day-card{background:#fff;border-radius:18px;overflow:hidden;margin-bottom:12px}
+  .day-head{width:100%;box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;padding:18px 20px;background:none;border:none;cursor:pointer;text-align:left}
+  .lesson-btn{width:100%;box-sizing:border-box;display:flex;align-items:center;gap:14px;padding:12px 0;background:none;border:none;border-bottom:1px solid #f5ede1;text-align:left}
+  .lesson-badge{width:26px;height:26px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+  .material-row{display:flex;align-items:center;justify-content:space-between;gap:16px;background:#fff;border-radius:18px;padding:18px 20px;margin-bottom:12px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <img src="uploads/raabta-logo-color-primario.png" alt="Raabta Beauty Academy" style="height:50px;width:auto">
+    <nav>
+      <a href="index.html">Inicio</a>
+      <a href="index.html#tienda">Tienda</a>
+      <a href="reserva.html">Salón</a>
+      <a href="dashboard.html" class="current">Academia</a>
+    </nav>
+  </div>
+</header>
+
+<section class="wrap">
+  <div style="margin-bottom:22px">
+    <span style="font-size:11.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--gold)">Academia · Curso mixto</span>
+    <h1 style="font-size:32px;margin:6px 0 0">Microblading básico</h1>
+  </div>
+
+  <div class="dash-tabs-mobile" id="tabsMobile" style="gap:8px;margin-bottom:20px;overflow-x:auto"></div>
+
+  <div class="dash-grid">
+    <aside class="dash-sidebar" id="tabsDesktop" style="flex-direction:column;gap:6px"></aside>
+    <div id="tabContent"></div>
+  </div>
+</section>
+
+<script>
+const DAYS_DATA = [
+  { key: "d1", title: "Día 1 · Fundamentos (presencial)", lessons: [
+    { id: "l1", title: "Introducción al microblading", modality: "Video", duration: "18 min" },
+    { id: "l2", title: "Anatomía y diseño de cejas", modality: "Video", duration: "22 min" },
+    { id: "l3", title: "Práctica presencial: trazos básicos", modality: "Presencial", duration: "3 h" }
+  ]},
+  { key: "d2", title: "Día 2 · Técnica (mixta)", lessons: [
+    { id: "l4", title: "Técnica pelo a pelo", modality: "Video", duration: "25 min" },
+    { id: "l5", title: "Mezcla y selección de pigmentos", modality: "Video", duration: "16 min" },
+    { id: "l6", title: "Práctica presencial supervisada", modality: "Presencial", duration: "4 h" }
+  ]},
+  { key: "d3", title: "Día 3 · Evaluación (presencial)", lessons: [
+    { id: "l7", title: "Retoque y cuidados posteriores", modality: "Video", duration: "14 min" },
+    { id: "l8", title: "Evaluación final práctica", modality: "Presencial", duration: "2 h" }
+  ]}
+];
+const ALL_LESSONS = DAYS_DATA.flatMap(d => d.lessons.map(l => ({ ...l, dayTitle: d.title })));
+
+const state = { tab: "curso", expandedDay: "d1", completed: ["l1", "l2"], currentLessonId: "l3" };
+
+function selectTab(k){ state.tab = k; render(); }
+function toggleDay(k){ state.expandedDay = state.expandedDay === k ? null : k; render(); }
+function selectLesson(id, locked){ if (locked) return; state.currentLessonId = id; render(); }
+
+function renderTabs(){
+  const tabDefs = [
+    { key: "curso", label: "Mi curso" },
+    { key: "materiales", label: "Materiales" },
+    { key: "certificado", label: "Certificado" }
+  ];
+  let mobile = '', desktop = '';
+  tabDefs.forEach(t => {
+    const active = state.tab === t.key;
+    mobile += `<button class="tab-btn ${active ? 'active' : ''}" style="flex-shrink:0" onclick="selectTab('${t.key}')">${t.label}</button>`;
+    desktop += `<button class="side-tab-btn ${active ? 'active' : ''}" onclick="selectTab('${t.key}')">${t.label}</button>`;
+  });
+  document.getElementById('tabsMobile').innerHTML = mobile;
+  document.getElementById('tabsDesktop').innerHTML = desktop;
+}
+
+function renderCurso(){
+  const total = ALL_LESSONS.length;
+  const progressPct = Math.round((state.completed.length / total) * 100);
+  const currentLessonRaw = ALL_LESSONS.find(l => l.id === state.currentLessonId) || ALL_LESSONS[0];
+  const dayLabel = currentLessonRaw.dayTitle.split(" · ")[0];
+
+  let html = `<div class="progress-card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <span style="font-size:14px;font-weight:600;color:var(--brown)">Progreso general</span>
+      <span style="font-size:14px;font-weight:700;color:var(--gold)">${progressPct}%</span>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" style="width:${progressPct}%"></div></div>
+  </div>`;
+
+  html += `<div class="player">
+    <div style="width:64px;height:64px;border-radius:999px;background:rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;font-size:26px">▶</div>
+    <div style="text-align:center">
+      <div style="font-size:14.5px;font-weight:600">${currentLessonRaw.title}</div>
+      <div style="font-size:12.5px;color:#c3a888;margin-top:2px">${dayLabel} · ${currentLessonRaw.duration}</div>
+    </div>
+  </div>`;
+
+  html += '<h3 style="font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--gold);margin:0 0 14px">Temario</h3>';
+
+  DAYS_DATA.forEach(d => {
+    const doneCount = d.lessons.filter(l => state.completed.includes(l.id)).length;
+    const expanded = state.expandedDay === d.key;
+    html += `<div class="day-card">
+      <button class="day-head" onclick="toggleDay('${d.key}')">
+        <div>
+          <div style="font-size:15px;font-weight:700;color:var(--ink)">${d.title}</div>
+          <div style="font-size:12.5px;color:var(--muted);margin-top:2px">${doneCount}/${d.lessons.length} clases completadas</div>
+        </div>
+        <span style="font-size:16px;color:var(--gold);display:inline-block;transform:rotate(${expanded ? 180 : 0}deg);transition:transform .15s">⌄</span>
+      </button>`;
+    if (expanded) {
+      html += '<div style="border-top:1px solid var(--line);padding:6px 20px 14px">';
+      d.lessons.forEach(l => {
+        const done = state.completed.includes(l.id);
+        const isCurrent = l.id === state.currentLessonId;
+        const locked = !done && l.id !== state.currentLessonId;
+        const badgeBg = done ? 'var(--gold)' : isCurrent ? 'var(--cream)' : '#f5ede1';
+        const badgeColor = done ? '#fff' : isCurrent ? 'var(--gold)' : '#c9b8a3';
+        const badgeIcon = done ? '✓' : isCurrent ? '▶' : '🔒';
+        const textColor = locked ? '#c9b8a3' : 'var(--ink)';
+        html += `<button class="lesson-btn" style="cursor:${locked ? 'not-allowed' : 'pointer'}" onclick="selectLesson('${l.id}', ${locked})">
+          <div class="lesson-badge" style="background:${badgeBg};color:${badgeColor}">${badgeIcon}</div>
+          <div style="flex:1">
+            <div style="font-size:14px;font-weight:600;color:${textColor}">${l.title}</div>
+            <div style="font-size:12px;color:#a89886">${l.modality} · ${l.duration}</div>
+          </div>
+        </button>`;
+      });
+      html += '</div>';
+    }
+    html += '</div>';
+  });
+  return html;
+}
+
+function renderMateriales(){
+  const materials = [
+    { name: "Manual de práctica (PDF)", meta: "Microblading básico · 24 páginas" },
+    { name: "Guía de mezcla de pigmentos (PDF)", meta: "Complemento Día 2" }
+  ];
+  let html = '<h3 style="font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--gold);margin:0 0 14px">Materiales descargables</h3>';
+  materials.forEach(m => {
+    html += `<div class="material-row">
+      <div style="display:flex;align-items:center;gap:14px">
+        <div style="width:42px;height:42px;border-radius:12px;background:var(--cream);display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--gold)">📄</div>
+        <div><div style="font-size:14.5px;font-weight:600;color:var(--ink)">${m.name}</div><div style="font-size:12.5px;color:var(--muted)">${m.meta}</div></div>
+      </div>
+      <button style="background:var(--gold);color:#fff;border:none;padding:10px 20px;border-radius:999px;font-size:13px;font-weight:600;cursor:pointer">Descargar</button>
+    </div>`;
+  });
+  return html;
+}
+
+function renderCertificado(){
+  const total = ALL_LESSONS.length;
+  const progressPct = Math.round((state.completed.length / total) * 100);
+  const unlocked = progressPct >= 100;
+  const border = unlocked ? 'var(--gold)' : '#e0d3bd';
+  const icon = unlocked ? '🏆' : '🔒';
+  let html = `<div style="background:#fff;border-radius:22px;padding:36px;text-align:center">
+    <div style="width:200px;height:150px;margin:0 auto 22px;border-radius:16px;border:2px dashed ${border};display:flex;align-items:center;justify-content:center;font-size:40px;color:${border}">${icon}</div>
+    <h3 style="font-size:22px;margin:0 0 8px">Certificado de Microblading básico</h3>`;
+  if (unlocked) {
+    html += `<p style="font-size:14px;color:var(--muted);margin:0 0 20px">¡Felicidades! Completaste el curso. Ya puedes descargar tu certificado.</p>
+    <button style="background:var(--gold);color:#fff;border:none;padding:12px 26px;border-radius:999px;font-size:14px;font-weight:700;cursor:pointer">Descargar certificado</button>`;
+  } else {
+    html += `<p style="font-size:14px;color:var(--muted);margin:0">Completa el 100% del curso para desbloquear tu certificado. Progreso actual: ${progressPct}%.</p>`;
+  }
+  html += '</div>';
+  return html;
+}
+
+function render(){
+  renderTabs();
+  let html = '';
+  if (state.tab === 'curso') html = renderCurso();
+  else if (state.tab === 'materiales') html = renderMateriales();
+  else if (state.tab === 'certificado') html = renderCertificado();
+  document.getElementById('tabContent').innerHTML = html;
+}
+
+render();
+</script>
+</body>
+</html>
