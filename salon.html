@@ -145,27 +145,32 @@ const SALON_CATEGORIES = [
   {
     id: "cejas", icon: "✎", title: "Cejas y microblading",
     desc: "Trazos finos pelo a pelo o efecto polvo para cejas de aspecto natural y definido.",
-    images: ["assets/service-2.webp", "assets/about-4.webp", "assets/gallery-1.webp"]
+    images: ["assets/service-2.webp", "assets/about-4.webp", "assets/gallery-1.webp"],
+    services: ["microblading", "micro-cejas", "henna"]
   },
   {
     id: "labios", icon: "❀", title: "Labios y delineado",
     desc: "Micropigmentación de labios, delineado de ojo semipermanente e hidratación con Hidralips.",
-    images: ["assets/service-11.webp", "assets/service-8.webp", "assets/service-1.webp"]
+    images: ["assets/service-11.webp", "assets/service-8.webp", "assets/service-1.webp"],
+    services: ["micro-labios", "delineado", "hidralips"]
   },
   {
     id: "pestanas", icon: "✧", title: "Pestañas",
     desc: "Lifting de pestañas y extensiones en distintos estilos para realzar la mirada.",
-    images: ["assets/service-14.webp", "assets/gallery-4.webp", "assets/gallery-5.webp"]
+    images: ["assets/service-14.webp", "assets/gallery-4.webp", "assets/gallery-5.webp"],
+    services: ["lifting", "pestanas"]
   },
   {
     id: "faciales", icon: "☀", title: "Faciales y rejuvenecimiento",
     desc: "Limpieza facial profunda, rejuvenecimiento y planing para una piel renovada y luminosa.",
-    images: ["assets/before-treatment.webp", "assets/after-treatment.webp", "assets/hero-image.webp"]
+    images: ["assets/before-treatment.webp", "assets/after-treatment.webp", "assets/hero-image.webp"],
+    services: ["faciales", "rejuvenecimiento", "planing"]
   },
   {
     id: "manos", icon: "✦", title: "Manos, pies y depilación",
     desc: "Manicure, pedicure y depilación con cera en distintas zonas.",
-    images: ["assets/left-hand.webp", "assets/right-hand.webp", "assets/service-2.webp"]
+    images: ["assets/left-hand.webp", "assets/right-hand.webp", "assets/service-2.webp"],
+    services: ["manicure", "pedicure", "depilacion"]
   }
 ];
 
@@ -186,7 +191,7 @@ function renderAccordion(){
         </div>
         <div class="acc-desc-col">
           <p class="acc-desc">${c.desc}</p>
-          <a href="reserva.html" class="acc-detail-btn" onclick="event.stopPropagation()">Reservar</a>
+          <a href="reserva.html?services=${c.services.join(',')}&step=2" class="acc-detail-btn" onclick="event.stopPropagation()">Reservar</a>
         </div>
         <span class="acc-plusminus">${i === 0 ? '−' : '+'}</span>
       </button>

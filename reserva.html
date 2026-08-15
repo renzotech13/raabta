@@ -409,6 +409,19 @@ function render(){
   document.getElementById('sidebar').style.display = state.confirmed ? 'none' : '';
 }
 
+(function initFromQuery(){
+  const params = new URLSearchParams(window.location.search);
+  const requested = (params.get('services') || '').split(',').map(s => s.trim()).filter(Boolean);
+  if (requested.length) {
+    const validIds = SERVICE_GROUPS.flatMap(g => g.services.map(s => s.id));
+    const matched = requested.filter(id => validIds.includes(id));
+    if (matched.length) {
+      state.serviceIds = matched;
+      if (params.get('step') === '2') state.step = 2;
+    }
+  }
+})();
+
 render();
 </script>
 </body>
