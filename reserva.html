@@ -106,7 +106,15 @@
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
+// Fase 1: guarda cada reserva en Supabase en vez de solo mostrar la confirmación.
+const SUPABASE_CONFIG = {
+  url: "https://bowlmookhezvwwxofqoe.supabase.co",
+  anonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJvd2xtb29raGV6dnd3eG9mcW9lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5NzQzMzAsImV4cCI6MjEwMjU1MDMzMH0.EZw0fuT8o0qCrFYbiegoN46VXBrkXRcUmDL37gBHqGs"
+};
+const supabaseClient = supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey);
+
 const SERVICE_GROUPS = [
   { title: "Principales", services: [
     { id: "microblading", name: "Microblading", duration: "2h", price: 250, description: "Técnica de trazos finos para cejas de aspecto natural, pelo a pelo." },
@@ -138,7 +146,8 @@ function hoursForDay(dayOfMonth){ const seed = dayOfMonth % ALL_HOURS.length; re
 const state = {
   step: 1, activeCategory: "Todos", serviceIds: [],
   dayOffset: 0, dateIdx: null, time: null, firstVisit: null,
-  formName: "", formPhone: "", comment: "", draftComment: "", confirmed: false
+  formName: "", formPhone: "", comment: "", draftComment: "", confirmed: false,
+  submitting: false, submitError: null
 };
 
 function findServices(){
@@ -187,21 +196,45 @@ function saveComment(){
 }
 
 function goBack(){ state.step = Math.max(1, state.step - 1); render(); }
+function toISODate(day){
+  const y = day.getFullYear(), m = String(day.getMonth() + 1).padStart(2, '0'), d = String(day.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+async function submitBooking(){
+  state.submitting = true;
+  state.submitError = null;
+  render();
+  const days = getDays();
+  const { error } = await supabaseClient.from('bookings').insert({
+    customer_name: state.formName.trim(),
+    phone: state.formPhone.trim(),
+    service_ids: state.serviceIds,
+    booking_date: toISODate(days[state.dateIdx]),
+    booking_time: state.time,
+    first_visit: state.firstVisit === 'si' ? true : state.firstVisit === 'no' ? false : null,
+    comment: state.comment || null
+  });
+  state.submitting = false;
+  if (error) {
+    state.submitError = 'No se pudo enviar tu solicitud. Revisa tu conexión e inténtalo de nuevo.';
+    render();
+    return;
+  }
+  state.confirmed = true;
+  document.getElementById('confirmPhone').textContent = state.formPhone;
+  document.getElementById('confirmOverlay').classList.add('show');
+  render();
+}
 function goNext(){
   const selectedServices = findServices();
   const canNext1 = selectedServices.length > 0;
   const canNext2 = state.dateIdx != null && !!state.time;
   const canNext3 = !!state.firstVisit;
   const canNext4 = state.formName.trim().length > 1 && state.formPhone.trim().length >= 6;
-  if (state.step === 1 && canNext1) state.step = 2;
-  else if (state.step === 2 && canNext2) state.step = 3;
-  else if (state.step === 3 && canNext3) state.step = 4;
-  else if (state.step === 4 && canNext4) {
-    state.confirmed = true;
-    document.getElementById('confirmPhone').textContent = state.formPhone;
-    document.getElementById('confirmOverlay').classList.add('show');
-  }
-  render();
+  if (state.step === 1 && canNext1) { state.step = 2; render(); }
+  else if (state.step === 2 && canNext2) { state.step = 3; render(); }
+  else if (state.step === 3 && canNext3) { state.step = 4; render(); }
+  else if (state.step === 4 && canNext4 && !state.submitting) { submitBooking(); }
 }
 
 function renderStep1(){
@@ -332,7 +365,7 @@ function renderSidebar(){
   if (state.step === 1) nextDisabled = !canNext1;
   if (state.step === 2) nextDisabled = !canNext2;
   if (state.step === 3) nextDisabled = !canNext3;
-  if (state.step === 4) { nextDisabled = !canNext4; nextLabel = "Enviar solicitud"; }
+  if (state.step === 4) { nextDisabled = !canNext4 || state.submitting; nextLabel = state.submitting ? "Enviando…" : "Enviar solicitud"; }
 
   let html = `<div class="aside-box">
     <div style="display:flex;align-items:center;gap:12px">
@@ -380,8 +413,11 @@ function renderSidebar(){
     </div>`;
   }
 
+  if (state.step === 4 && state.submitError) {
+    html += `<p style="font-size:13px;color:#b3392f;margin:0">${state.submitError}</p>`;
+  }
   html += '<div style="display:flex;gap:10px;margin-top:4px">';
-  if (state.step > 1) html += '<button class="btn-outline" style="flex-shrink:0" onclick="goBack()">Atrás</button>';
+  if (state.step > 1) html += `<button class="btn-outline" style="flex-shrink:0" ${state.submitting ? 'disabled' : ''} onclick="goBack()">Atrás</button>`;
   html += `<button class="btn" id="nextBtn" style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px" ${nextDisabled ? 'disabled' : ''} onclick="goNext()">${nextLabel} →</button>`;
   html += '</div></div>';
   return html;
