@@ -107,36 +107,13 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="assets/catalog.js"></script>
 <script>
 // Fase 1: guarda cada reserva en Supabase en vez de solo mostrar la confirmación.
-const SUPABASE_CONFIG = {
-  url: "https://bowlmookhezvwwxofqoe.supabase.co",
-  anonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJvd2xtb29raGV6dnd3eG9mcW9lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5NzQzMzAsImV4cCI6MjEwMjU1MDMzMH0.EZw0fuT8o0qCrFYbiegoN46VXBrkXRcUmDL37gBHqGs"
-};
-const supabaseClient = supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey);
+const supabaseClient = catalogClient;
 
-const SERVICE_GROUPS = [
-  { title: "Principales", services: [
-    { id: "microblading", name: "Microblading", duration: "2h", price: 250, description: "Técnica de trazos finos para cejas de aspecto natural, pelo a pelo." },
-    { id: "micro-cejas", name: "Micropigmentación de cejas", duration: "2h", price: 450, description: "Efecto polvo con acabado suave y duradero, ideal para cejas más definidas." },
-    { id: "micro-labios", name: "Micropigmentación de labios", duration: "3h", price: 550, description: "Realza el contorno y color natural de los labios de forma semipermanente." },
-    { id: "delineado", name: "Delineado de ojo", duration: "1h", price: 180, description: "Delineado semipermanente que define la mirada sin necesidad de maquillaje diario." },
-    { id: "hidralips", name: "Hidralips", duration: "1h", price: 180, description: "Tratamiento hidratante que aporta volumen y suavidad natural a los labios." }
-  ]},
-  { title: "Complementarios", services: [
-    { id: "depilacion", name: "Depilación", duration: "—", price: "15–40", description: "Depilación con cera en distintas zonas, según tratamiento elegido." },
-    { id: "faciales", name: "Faciales", duration: "—", price: 90, description: "Limpieza facial profunda que renueva y equilibra la piel." },
-    { id: "rejuvenecimiento", name: "Rejuvenecimiento facial", duration: "—", price: 450, description: "Tratamiento facial avanzado enfocado en firmeza y luminosidad." },
-    { id: "planing", name: "Planing", duration: "—", price: 50, description: "Exfoliación facial suave que retira vello fino e impurezas." }
-  ]},
-  { title: "Opcionales", services: [
-    { id: "pedicure", name: "Pedicure", duration: "—", price: 50, description: "Cuidado completo de pies con esmaltado incluido." },
-    { id: "manicure", name: "Manicure", duration: "—", price: 80, description: "Cuidado de manos y uñas con esmaltado a elección." },
-    { id: "lifting", name: "Lifting de pestañas", duration: "—", price: 80, description: "Curvatura duradera que realza la mirada sin extensiones." },
-    { id: "pestanas", name: "Pestañas", duration: "—", price: "50–150", description: "Extensión de pestañas en distintos estilos y densidades." },
-    { id: "henna", name: "Henna", duration: "—", price: 40, description: "Diseño de cejas con tinte natural de larga duración." }
-  ]}
-];
+// Fase 3: se carga de forma async desde Supabase (ver init() al final del archivo).
+let SERVICE_GROUPS = [];
 const WEEKDAYS = ["dom","lun","mar","mié","jue","vie","sáb"];
 const MONTHS = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
 const ALL_HOURS = ["8:00","8:30","9:00","9:30","10:00","10:30","11:00","11:30","2:00","2:30","3:00","3:30","4:00","4:30","5:00","5:30"];
@@ -353,8 +330,9 @@ function renderSidebar(){
   const days = getDays();
   const hasSelection = selectedServices.length > 0;
   const hasDateTime = state.dateIdx != null && !!state.time;
-  const totalPrice = selectedServices.reduce((sum, s) => sum + (typeof s.price === "number" ? s.price : 0), 0);
-  const hasRangePrice = selectedServices.some(s => typeof s.price !== "number");
+  const isNumericPrice = p => /^\d+(\.\d+)?$/.test(String(p));
+  const totalPrice = selectedServices.reduce((sum, s) => sum + (isNumericPrice(s.price) ? Number(s.price) : 0), 0);
+  const hasRangePrice = selectedServices.some(s => !isNumericPrice(s.price));
   const totalDuration = selectedServices.map(s => s.duration).filter(d => d !== "—").join(" + ") || "—";
 
   const canNext1 = selectedServices.length > 0;
@@ -445,7 +423,7 @@ function render(){
   document.getElementById('sidebar').style.display = state.confirmed ? 'none' : '';
 }
 
-(function initFromQuery(){
+function initFromQuery(){
   const params = new URLSearchParams(window.location.search);
   const requested = (params.get('services') || '').split(',').map(s => s.trim()).filter(Boolean);
   if (requested.length) {
@@ -456,9 +434,20 @@ function render(){
       if (params.get('step') === '2') state.step = 2;
     }
   }
-})();
+}
 
-render();
+(async function init(){
+  document.getElementById('mainContent').innerHTML = '<p style="color:var(--muted)">Cargando servicios…</p>';
+  try {
+    SERVICE_GROUPS = await fetchServiceGroups();
+  } catch (e) {
+    document.getElementById('mainContent').innerHTML = '<p style="color:var(--muted)">No se pudieron cargar los servicios. <button class="btn-outline" onclick="location.reload()">Reintentar</button></p>';
+    document.getElementById('sidebar').style.display = 'none';
+    return;
+  }
+  initFromQuery();
+  render();
+})();
 </script>
 </body>
 </html>
