@@ -322,12 +322,12 @@
 
 <section class="cards wrap" style="padding-left:0;padding-right:0">
   <div id="belleza" class="card card-light">
-    <div class="card-media tienda">Foto: cremas y productos de skincare Raabta</div>
+    <div class="card-media tienda" id="bellezaMedia">Cargando…</div>
     <div class="card-body">
       <span class="card-tag">Belleza</span>
       <h3 class="card-title">Cremas y cuidado de la piel</h3>
-      <p class="card-desc">Cremas faciales, sueros y cuidado post-tratamiento pensados para la piel de la mujer. Pago contra entrega disponible.</p>
-      <div class="card-price-row"><span>Crema facial Raabta</span><span class="card-price">S/ 89</span></div>
+      <p class="card-desc" id="bellezaDesc"></p>
+      <div class="card-price-row"><span id="bellezaName"></span><span class="card-price" id="bellezaPrice"></span></div>
       <a href="#belleza" class="card-cta">Comprar</a>
     </div>
   </div>
@@ -518,6 +518,36 @@
   <svg width="30" height="30" viewBox="0 0 24 24" fill="#fff"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5.1-1.3A10 10 0 1 0 12 2zm5.5 14.2c-.2.7-1.3 1.3-1.9 1.4-.5.1-1.1.1-1.8-.1-.4-.1-.9-.3-1.6-.6-2.9-1.2-4.7-4.1-4.9-4.3-.1-.2-1.1-1.5-1.1-2.9s.7-2 1-2.3c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.4.2.5.7 1.8.8 1.9.1.1.1.3 0 .5s-.2.3-.3.5l-.5.6c-.1.1-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1.1 2.2 1.4 2.5 1.5.3.1.5.1.7-.1.2-.2.8-.9 1-1.2.2-.3.4-.3.7-.2.3.1 1.7.8 2 1 .3.2.5.2.6.4.1.1.1.7-.1 1.4z"></path></svg>
 </a>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="assets/catalog.js"></script>
+<script>
+// Fase 3: la tarjeta "Belleza" muestra el primer producto activo desde Supabase.
+(async function initBelleza(){
+  const media = document.getElementById('bellezaMedia');
+  const desc = document.getElementById('bellezaDesc');
+  const name = document.getElementById('bellezaName');
+  const price = document.getElementById('bellezaPrice');
+  try {
+    const products = await fetchProducts();
+    const product = products[0];
+    if (!product) {
+      media.textContent = 'Próximamente';
+      desc.textContent = 'Estamos preparando nuestra línea de cuidado facial.';
+      return;
+    }
+    if (product.image_url) {
+      media.outerHTML = `<img src="${product.image_url}" alt="${product.name}" style="width:100%;height:210px;object-fit:cover">`;
+    } else {
+      media.textContent = `Foto: ${product.name}`;
+    }
+    desc.textContent = product.description;
+    name.textContent = product.name;
+    price.textContent = 'S/ ' + product.price;
+  } catch (e) {
+    media.textContent = 'No se pudo cargar';
+  }
+})();
+</script>
 <script>
 (function(){
   const STAR_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="#a47234"><path d="M12 2l2.4 7.2H22l-6 4.6 2.3 7.2-6.3-4.5-6.3 4.5L8 13.8 2 9.2h7.6z"></path></svg>';
