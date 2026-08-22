@@ -52,3 +52,33 @@ async function fetchProducts() {
   if (error) throw error;
   return data;
 }
+
+async function fetchSiteContent() {
+  const { data, error } = await catalogClient
+    .from("site_content")
+    .select("*")
+    .eq("id", 1)
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+async function fetchTestimonials() {
+  const { data, error } = await catalogClient
+    .from("testimonials")
+    .select("*")
+    .eq("active", true)
+    .order("sort_order");
+  if (error) throw error;
+  return data;
+}
+
+async function fetchCourses() {
+  const { data, error } = await catalogClient
+    .from("courses")
+    .select("*")
+    .eq("active", true)
+    .order("sort_order");
+  if (error) throw error;
+  return data;
+}
