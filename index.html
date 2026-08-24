@@ -564,6 +564,8 @@
       document.getElementById('headerLogo').src = c.logo_url;
       document.getElementById('footerLogo').src = c.logo_url;
     }
+    if (c.logo_header_height) document.getElementById('headerLogo').style.height = c.logo_header_height + 'px';
+    if (c.logo_footer_height) document.getElementById('footerLogo').style.height = c.logo_footer_height + 'px';
     document.getElementById('heroEyebrow').textContent = c.hero_eyebrow;
     document.getElementById('heroTitle').textContent = c.hero_title;
     document.getElementById('heroSubtitle').textContent = c.hero_subtitle;
