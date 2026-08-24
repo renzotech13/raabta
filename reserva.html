@@ -109,23 +109,51 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="assets/catalog.js"></script>
 <script>
-// Fase 1: guarda cada reserva en Supabase en vez de solo mostrar la confirmación.
+// Fase 8: la disponibilidad real y la reserva misma pasan por el bot (mismo
+// motor que usa WhatsApp), no por un insert directo a Supabase — así una
+// reserva web y una por WhatsApp compiten por el mismo horario de verdad,
+// en vez de vivir en dos tablas que nunca se enteran una de la otra.
+const BOT_API_URL = "https://bot.raabtastudio.com";
 const supabaseClient = catalogClient;
 
 // Fase 3: se carga de forma async desde Supabase (ver init() al final del archivo).
 let SERVICE_GROUPS = [];
 const WEEKDAYS = ["dom","lun","mar","mié","jue","vie","sáb"];
 const MONTHS = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
-const ALL_HOURS = ["8:00","8:30","9:00","9:30","10:00","10:30","11:00","11:30","2:00","2:30","3:00","3:30","4:00","4:30","5:00","5:30"];
 function fmtPrice(p){ return "S/ " + p; }
-function hoursForDay(dayOfMonth){ const seed = dayOfMonth % ALL_HOURS.length; return ALL_HOURS.filter((_, i) => (i + seed) % 5 !== 0); }
 
 const state = {
   step: 1, activeCategory: "Todos", serviceIds: [],
   dayOffset: 0, dateIdx: null, time: null, firstVisit: null,
   formName: "", formPhone: "", comment: "", draftComment: "", confirmed: false,
-  submitting: false, submitError: null
+  submitting: false, submitError: null,
+  // fecha ISO -> string[] de horas HH:mm libres, según lo último que devolvió el bot.
+  disponibilidad: {}, dispLoading: false, dispError: false
 };
+
+/** Trae disponibilidad real para los servicios elegidos, sobre el rango de días visible. */
+async function cargarDisponibilidad(){
+  if (state.serviceIds.length === 0) return;
+  state.dispLoading = true;
+  state.dispError = false;
+  render();
+  const days = getDays();
+  const desde = toISODate(days[0]);
+  const hasta = toISODate(days[days.length - 1]);
+  try {
+    const url = `${BOT_API_URL}/public/disponibilidad?servicio_ids=${encodeURIComponent(state.serviceIds.join(','))}&fecha_desde=${desde}&fecha_hasta=${hasta}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('bad_status');
+    const data = await res.json();
+    const mapa = {};
+    data.forEach(d => { mapa[d.fecha] = d.horas; });
+    state.disponibilidad = mapa;
+  } catch (e) {
+    state.dispError = true;
+  }
+  state.dispLoading = false;
+  render();
+}
 
 function findServices(){
   const list = [];
@@ -139,7 +167,7 @@ function toggleService(id){
 function selectCategory(c){ state.activeCategory = c; render(); }
 
 function getDays(){
-  const today = new Date(2026, 7, 10);
+  const today = new Date();
   const days = [];
   for (let i = 0; i < 10; i++) {
     const day = new Date(today);
@@ -148,9 +176,9 @@ function getDays(){
   }
   return days;
 }
-function selectDay(i, closed){ if (closed) return; state.dateIdx = i; state.time = null; render(); }
-function scrollDaysBack(){ state.dayOffset = Math.max(0, state.dayOffset - 6); state.dateIdx = null; state.time = null; render(); }
-function scrollDaysFwd(){ state.dayOffset += 6; state.dateIdx = null; state.time = null; render(); }
+function selectDay(i, sinCupo){ if (sinCupo) return; state.dateIdx = i; state.time = null; render(); }
+function scrollDaysBack(){ state.dayOffset = Math.max(0, state.dayOffset - 6); state.dateIdx = null; state.time = null; cargarDisponibilidad(); }
+function scrollDaysFwd(){ state.dayOffset += 6; state.dateIdx = null; state.time = null; cargarDisponibilidad(); }
 function selectTime(h){ state.time = h; render(); }
 function selectFirstVisit(k){ state.firstVisit = k; render(); }
 
@@ -177,26 +205,50 @@ function toISODate(day){
   const y = day.getFullYear(), m = String(day.getMonth() + 1).padStart(2, '0'), d = String(day.getDate()).padStart(2, '0');
   return `${y}-${m}-${d}`;
 }
+/** "987654321" o "+51 987 654 321" -> "51987654321", el mismo formato que usa el bot de WhatsApp. */
+function normalizarTelefono(raw){
+  const soloDigitos = raw.replace(/\D/g, '');
+  return soloDigitos.startsWith('51') ? soloDigitos : `51${soloDigitos}`;
+}
+
 async function submitBooking(){
   state.submitting = true;
   state.submitError = null;
   render();
   const days = getDays();
-  const { error } = await supabaseClient.from('bookings').insert({
-    customer_name: state.formName.trim(),
-    phone: state.formPhone.trim(),
-    service_ids: state.serviceIds,
-    booking_date: toISODate(days[state.dateIdx]),
-    booking_time: state.time,
-    first_visit: state.firstVisit === 'si' ? true : state.firstVisit === 'no' ? false : null,
-    comment: state.comment || null
-  });
-  state.submitting = false;
-  if (error) {
+  try {
+    const res = await fetch(`${BOT_API_URL}/public/reservas`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        servicio_ids: state.serviceIds,
+        fecha: toISODate(days[state.dateIdx]),
+        hora: state.time,
+        nombre: state.formName.trim(),
+        telefono: normalizarTelefono(state.formPhone.trim()),
+        primera_visita: state.firstVisit === 'si' ? true : state.firstVisit === 'no' ? false : null,
+        comentario: state.comment || undefined
+      })
+    });
+    if (res.status === 409) {
+      // Alguien más tomó ese horario justo ahora (WhatsApp u otra pestaña) —
+      // se refresca la disponibilidad real en vez de dejar seleccionado un
+      // horario que ya no existe.
+      state.submitting = false;
+      state.submitError = 'Ese horario ya no está disponible, se acaba de ocupar. Elige otro.';
+      state.step = 2;
+      state.time = null;
+      await cargarDisponibilidad();
+      return;
+    }
+    if (!res.ok) throw new Error('bad_status');
+  } catch (e) {
+    state.submitting = false;
     state.submitError = 'No se pudo enviar tu solicitud. Revisa tu conexión e inténtalo de nuevo.';
     render();
     return;
   }
+  state.submitting = false;
   state.confirmed = true;
   document.getElementById('confirmPhone').textContent = state.formPhone;
   document.getElementById('confirmOverlay').classList.add('show');
@@ -208,7 +260,7 @@ function goNext(){
   const canNext2 = state.dateIdx != null && !!state.time;
   const canNext3 = !!state.firstVisit;
   const canNext4 = state.formName.trim().length > 1 && state.formPhone.trim().length >= 6;
-  if (state.step === 1 && canNext1) { state.step = 2; render(); }
+  if (state.step === 1 && canNext1) { state.step = 2; render(); cargarDisponibilidad(); }
   else if (state.step === 2 && canNext2) { state.step = 3; render(); }
   else if (state.step === 3 && canNext3) { state.step = 4; render(); }
   else if (state.step === 4 && canNext4 && !state.submitting) { submitBooking(); }
@@ -254,9 +306,11 @@ function renderStep2(){
   </div>`;
   html += '<div style="display:flex;gap:10px;overflow-x:auto;padding-bottom:6px;margin-bottom:28px;min-width:0">';
   days.forEach((day, i) => {
-    const closed = day.getDay() === 0;
+    const iso = toISODate(day);
+    const horasDia = state.disponibilidad[iso];
+    const sinCupo = !state.dispLoading && Array.isArray(horasDia) && horasDia.length === 0;
     const selected = state.dateIdx === i;
-    html += `<button class="day-btn ${selected ? 'selected' : ''}" ${closed ? 'disabled' : ''} onclick="selectDay(${i}, ${closed})">
+    html += `<button class="day-btn ${selected ? 'selected' : ''}" ${sinCupo ? 'disabled' : ''} onclick="selectDay(${i}, ${sinCupo})">
       <span class="day-wd">${WEEKDAYS[day.getDay()]}</span>
       <span class="day-num">${day.getDate()}</span>
       <span class="day-mo">${MONTHS[day.getMonth()]}</span>
@@ -264,8 +318,12 @@ function renderStep2(){
   });
   html += '</div>';
   html += '<h3 style="font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--gold);margin:0 0 14px">Escoge una hora</h3>';
-  if (state.dateIdx != null) {
-    const dayHours = hoursForDay(days[state.dateIdx].getDate());
+  if (state.dispError) {
+    html += '<p style="font-size:14px;color:#b3392f">No se pudo cargar la disponibilidad. <button class="btn-outline" onclick="cargarDisponibilidad()">Reintentar</button></p>';
+  } else if (state.dispLoading) {
+    html += '<p style="font-size:14px;color:#a89886">Consultando horarios disponibles…</p>';
+  } else if (state.dateIdx != null) {
+    const dayHours = state.disponibilidad[toISODate(days[state.dateIdx])] || [];
     if (dayHours.length > 0) {
       html += '<div style="display:flex;flex-direction:column;gap:10px">';
       dayHours.forEach(h => {
@@ -447,6 +505,7 @@ function initFromQuery(){
   }
   initFromQuery();
   render();
+  if (state.step === 2) cargarDisponibilidad();
 })();
 </script>
 </body>
