@@ -266,7 +266,7 @@
 
 <header>
   <div class="header-inner">
-    <img id="headerLogo" src="uploads/raabta-logo-color-primario.png" alt="Raabta Beauty Academy" style="height:54px;width:auto">
+    <img id="headerLogo" data-default="uploads/raabta-logo-color-primario.png" alt="Raabta Beauty Academy" style="height:54px;width:auto">
     <nav>
       <a href="#belleza">Belleza</a>
       <a href="salon.html">Salón</a>
@@ -294,7 +294,7 @@
 
 <section class="hero-media wrap" style="padding-left:0;padding-right:0">
   <div class="hero-frame">
-    <img id="heroImage" src="assets/hero-image.webp" alt="Raabta Beauty Academy">
+    <img id="heroImage" data-default="assets/hero-image.webp" alt="Raabta Beauty Academy">
     <div id="wheelWrap" class="wheel-wrap wheel-rotate"></div>
     <div class="hero-explore">
       <span class="star">✳</span>
@@ -385,10 +385,10 @@
     <a href="#contacto" class="btn-outline">Conócenos</a>
   </div>
   <div class="about-grid">
-    <img id="aboutImageBig" class="big" src="assets/gallery-1.webp" alt="Ambiente Raabta">
+    <img id="aboutImageBig" class="big" data-default="assets/gallery-1.webp" alt="Ambiente Raabta">
     <div class="stack">
-      <img id="aboutImageSmall1" class="small1" src="assets/gallery-5.webp" alt="Trabajo de belleza Raabta">
-      <img id="aboutImageSmall2" class="small2" src="assets/gallery-4.webp" alt="Detalle de tratamiento">
+      <img id="aboutImageSmall1" class="small1" data-default="assets/gallery-5.webp" alt="Trabajo de belleza Raabta">
+      <img id="aboutImageSmall2" class="small2" data-default="assets/gallery-4.webp" alt="Detalle de tratamiento">
     </div>
   </div>
 </section>
@@ -406,8 +406,8 @@
   <div class="why-grid">
     <div class="why-left">
       <div class="compare">
-        <img id="afterImg" class="after" src="assets/after-treatment.webp" alt="Después del tratamiento">
-        <img id="beforeImg" class="before" src="assets/before-treatment.webp" alt="Antes del tratamiento">
+        <img id="afterImg" class="after" data-default="assets/after-treatment.webp" alt="Después del tratamiento">
+        <img id="beforeImg" class="before" data-default="assets/before-treatment.webp" alt="Antes del tratamiento">
         <div class="compare-tag left">Antes</div>
         <div class="compare-tag right">Después</div>
         <div id="compareHandle" class="compare-handle"><div class="dot">↔</div></div>
@@ -486,7 +486,7 @@
 <footer id="contacto">
   <div class="footer-inner">
     <div>
-      <img id="footerLogo" class="footer-logo" src="uploads/raabta-logo-color-primario.png" alt="Raabta">
+      <img id="footerLogo" class="footer-logo" data-default="uploads/raabta-logo-color-primario.png" alt="Raabta">
       <p id="footerTagline">Portal de belleza, salón y academia de formación para la mujer en Los Olivos, Lima.</p>
     </div>
     <div class="footer-col">
@@ -557,25 +557,41 @@
 <script>
 // Fase 5: hero, "sobre nosotros" y footer editables desde el panel admin.
 // Si el fetch falla, se queda con el texto hardcodeado que ya está en el HTML.
+//
+// Fase 6.1: las imágenes editables (logo, hero, sobre nosotros, comparador
+// antes/después) no traen "src" en el HTML — solo "data-default" con la
+// ruta de respaldo. Así el navegador nunca empieza a descargar la foto
+// vieja antes de saber si hay una subida desde el panel: se resuelve el
+// src una sola vez (elegida o de respaldo), sin el parpadeo de "sale la
+// anterior y después cambia" que salía al pisar un src ya cargado.
 (async function initSiteContent(){
+  function applyImages(c) {
+    const bySrc = {
+      headerLogo: c && c.logo_url,
+      footerLogo: c && c.logo_url,
+      heroImage: c && c.hero_image_url,
+      aboutImageBig: c && c.about_image_big,
+      aboutImageSmall1: c && c.about_image_small1,
+      aboutImageSmall2: c && c.about_image_small2,
+      beforeImg: c && c.compare_before_image,
+      afterImg: c && c.compare_after_image,
+    };
+    Object.keys(bySrc).forEach((id) => {
+      const el = document.getElementById(id);
+      el.src = bySrc[id] || el.dataset.default;
+    });
+  }
   try {
     const c = await fetchSiteContent();
-    if (c.logo_url) {
-      document.getElementById('headerLogo').src = c.logo_url;
-      document.getElementById('footerLogo').src = c.logo_url;
-    }
+    applyImages(c);
     if (c.logo_header_height) document.getElementById('headerLogo').style.height = c.logo_header_height + 'px';
     if (c.logo_footer_height) document.getElementById('footerLogo').style.height = c.logo_footer_height + 'px';
     document.getElementById('heroEyebrow').textContent = c.hero_eyebrow;
     document.getElementById('heroTitle').textContent = c.hero_title;
     document.getElementById('heroSubtitle').textContent = c.hero_subtitle;
-    if (c.hero_image_url) document.getElementById('heroImage').src = c.hero_image_url;
     document.getElementById('aboutEyebrow').textContent = c.about_eyebrow;
     document.getElementById('aboutTitle').textContent = c.about_title;
     document.getElementById('aboutBody').textContent = c.about_body;
-    if (c.about_image_big) document.getElementById('aboutImageBig').src = c.about_image_big;
-    if (c.about_image_small1) document.getElementById('aboutImageSmall1').src = c.about_image_small1;
-    if (c.about_image_small2) document.getElementById('aboutImageSmall2').src = c.about_image_small2;
     if (c.salon_image_url) {
       const salonMedia = document.getElementById('salonMedia');
       salonMedia.outerHTML = `<img src="${c.salon_image_url}" alt="Servicios de belleza" class="card-media" style="width:100%;height:210px;object-fit:cover">`;
@@ -584,11 +600,10 @@
       const academiaMedia = document.getElementById('academiaMedia');
       academiaMedia.outerHTML = `<img src="${c.academia_image_url}" alt="Cursos certificados" class="card-media" style="width:100%;height:210px;object-fit:cover">`;
     }
-    if (c.compare_before_image) document.getElementById('beforeImg').src = c.compare_before_image;
-    if (c.compare_after_image) document.getElementById('afterImg').src = c.compare_after_image;
     document.getElementById('footerTagline').textContent = c.footer_tagline;
   } catch (e) {
-    // se queda con el texto hardcodeado del HTML
+    // se queda con el texto hardcodeado del HTML; las imágenes caen a data-default
+    applyImages(null);
   }
 })();
 </script>
