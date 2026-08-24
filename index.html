@@ -266,7 +266,7 @@
 
 <header>
   <div class="header-inner">
-    <img src="uploads/raabta-logo-color-primario.png" alt="Raabta Beauty Academy" style="height:54px;width:auto">
+    <img id="headerLogo" src="uploads/raabta-logo-color-primario.png" alt="Raabta Beauty Academy" style="height:54px;width:auto">
     <nav>
       <a href="#belleza">Belleza</a>
       <a href="salon.html">Salón</a>
@@ -486,7 +486,7 @@
 <footer id="contacto">
   <div class="footer-inner">
     <div>
-      <img class="footer-logo" src="uploads/raabta-logo-color-primario.png" alt="Raabta">
+      <img id="footerLogo" class="footer-logo" src="uploads/raabta-logo-color-primario.png" alt="Raabta">
       <p id="footerTagline">Portal de belleza, salón y academia de formación para la mujer en Los Olivos, Lima.</p>
     </div>
     <div class="footer-col">
@@ -560,6 +560,10 @@
 (async function initSiteContent(){
   try {
     const c = await fetchSiteContent();
+    if (c.logo_url) {
+      document.getElementById('headerLogo').src = c.logo_url;
+      document.getElementById('footerLogo').src = c.logo_url;
+    }
     document.getElementById('heroEyebrow').textContent = c.hero_eyebrow;
     document.getElementById('heroTitle').textContent = c.hero_title;
     document.getElementById('heroSubtitle').textContent = c.hero_subtitle;
