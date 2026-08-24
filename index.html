@@ -522,21 +522,27 @@
 <script src="assets/catalog.js"></script>
 <script>
 // Fase 3: la tarjeta "Belleza" muestra el primer producto activo desde Supabase.
+// Fase 6: la imagen puede fijarse aparte desde Front > Tarjetas (site_content.belleza_image_url);
+// si esa queda vacía, se usa la foto del producto como antes.
 (async function initBelleza(){
   const media = document.getElementById('bellezaMedia');
   const desc = document.getElementById('bellezaDesc');
   const name = document.getElementById('bellezaName');
   const price = document.getElementById('bellezaPrice');
   try {
-    const products = await fetchProducts();
+    const [products, siteContent] = await Promise.all([
+      fetchProducts(),
+      fetchSiteContent().catch(() => null),
+    ]);
     const product = products[0];
     if (!product) {
       media.textContent = 'Próximamente';
       desc.textContent = 'Estamos preparando nuestra línea de cuidado facial.';
       return;
     }
-    if (product.image_url) {
-      media.outerHTML = `<img src="${product.image_url}" alt="${product.name}" style="width:100%;height:210px;object-fit:cover">`;
+    const imageUrl = (siteContent && siteContent.belleza_image_url) || product.image_url;
+    if (imageUrl) {
+      media.outerHTML = `<img src="${imageUrl}" alt="${product.name}" style="width:100%;height:210px;object-fit:cover">`;
     } else {
       media.textContent = `Foto: ${product.name}`;
     }
